@@ -178,23 +178,52 @@ def run_agent(chat_history: list):
         log_debug("Agent Execution Failure", str(e))
         return "I am experiencing technical difficulties. Please try again or reach out to our human support team at support@asterandrow.com."
 
+class CLIColors:
+    """ANSI Escape Codes for Terminal Aesthetics"""
+    BANNER_BORDER = '\033[33m'    # 🟠 Amber/Gold (Warm & Premium)
+    BANNER_TEXT = '\033[94m'   # 🔵 Blue (Professional & Clean)
+    
+    USER = '\033[96m'           # 🩵 Cyan
+    AGENT = '\033[93m'          # 🟡 Yellow
+    BOLD = '\033[1m'            # Bold Text
+    DIM = '\033[2m'             # Faded Text
+    RESET = '\033[0m'           # Reset formatting
 def print_banner():
-    print("\n" + "="*50)
-    print(" 🌿 ASTER & ROW AI SUPPORT INTERFACE 🌿".center(50))
-    print("="*50)
-    print(" Type 'exit' to quit. Set DEBUG_MODE=true in .env for tracing.")
-    print("-" * 50 + "\n")
+    """Displays a stylized CLI welcome banner using Unicode box-drawing."""
+    print("\n")
+    
+    # Print the top border
+    print(f"{CLIColors.BANNER_BORDER}{CLIColors.BOLD}╔" + "═" * 50 + "╗")
+    
+    # Print left border -> Switch to text color -> Print text -> Switch back to border color -> Print right border
+    print(f"{CLIColors.BANNER_BORDER}║      {CLIColors.BANNER_TEXT}🌿 ASTER & ROW AI SUPPORT INTERFACE 🌿      {CLIColors.BANNER_BORDER}║")
+    
+    # Print the bottom border and reset everything
+    print(f"{CLIColors.BANNER_BORDER}╚" + "═" * 50 + f"╝{CLIColors.RESET}")
+    
+    # Print the instructions in dim text
+    print(f"{CLIColors.DIM}  Type 'exit' to quit. Set DEBUG_MODE=true for logs.{CLIColors.RESET}\n")
 
 if __name__ == "__main__":
+   if __name__ == "__main__":
     print_banner()
     conversation_history = [{"role": "system", "content": SYSTEM_PROMPT}]
     
     while True:
-        user_input = input("You: ")
+        # Styled User Input Prompt
+        user_input = input(f"{CLIColors.USER}{CLIColors.BOLD}You: {CLIColors.RESET}")
+        
         if user_input.lower() in ['exit', 'quit']:
-            print("\nGoodbye!\n")
+            print(f"\n{CLIColors.DIM}Closing session. Goodbye!{CLIColors.RESET}\n")
             break
             
         conversation_history.append({"role": "user", "content": user_input})
+        
+        # Add a subtle loading indicator (optional, printed then overwritten)
+        print(f"{CLIColors.DIM}Agent is typing...{CLIColors.RESET}", end="\r")
+        
         answer = run_agent(conversation_history)
-        print(f"\nAgent: {answer}\n")
+        
+        # Clear the "typing..." line and print the styled Agent response
+        print(" " * 20, end="\r")
+        print(f"\n{CLIColors.AGENT}{CLIColors.BOLD}Aster & Row: {CLIColors.RESET}{answer}\n")
