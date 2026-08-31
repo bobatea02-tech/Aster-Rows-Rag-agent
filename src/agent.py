@@ -17,7 +17,7 @@ if sys.stderr.encoding is None or sys.stderr.encoding.lower() != "utf-8":
 load_dotenv()
 
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-MODEL_NAME = "openai/gpt-oss-20b"
+MODEL_NAME = "openai/gpt-oss-120b"
 DEBUG_MODE = os.environ.get("DEBUG_MODE", "false").lower() in ("true", "1", "yes")
 
 db_path = os.path.join(os.path.dirname(__file__), "..", "chroma_db")
@@ -74,7 +74,8 @@ def search_policies(query: str) -> str:
             "snippet": doc[:120] + "..."
         })
         
-    log_debug("RAG Retrieved Passages & Metadata", debug_records)
+    sources_only = [f"{p['source']} — {p['heading']}" for p in debug_records]
+    log_debug("Sources retrieved", sources_only)
     return "\n\n---\n\n".join(context_chunks)
 
 SYSTEM_PROMPT = """You are the AI customer support agent for Aster & Row, an ecommerce brand selling bags, drinkware, and travel accessories.
@@ -148,16 +149,27 @@ def call_groq_with_retry(**kwargs):
             return client.chat.completions.create(**kwargs)
         except Exception as e:
             err_str = str(e)
+            if attempt == 0:
+             print(f"\n[RAW GROQ ERROR] type={type(e).__name__} | {err_str}\n") 
             if "429" in err_str or "rate_limit" in err_str.lower():
                 wait_time = min(2 ** attempt, 20)   # 1, 2, 4, 8, 16 seconds
                 log_debug(f"Rate limited, retry {attempt + 1}/{max_retries}", f"waiting {wait_time}s")
                 _time.sleep(wait_time)
                 continue
             raise
+        
     raise RuntimeError("Exceeded max retries after repeated rate limiting.")
 
+def log_debug(title: str, payload):
+    if not DEBUG_MODE:
+        return
+    if isinstance(payload, list):
+        print(f"[{title}] " + ", ".join(str(p) for p in payload))
+    else:
+        print(f"[{title}] {payload}")
+
 def run_agent(chat_history: list) -> dict:
-    log_debug("Incoming Conversation History", chat_history)
+    log_debug("User asked", chat_history[-1]["content"])
     trace_tool_calls = []  # fix #1
 
     try:
@@ -174,7 +186,6 @@ def run_agent(chat_history: list) -> dict:
 
             if not response_message.tool_calls:
                 final_content = response_message.content
-                log_debug("Final Agent Output", final_content)
                 chat_history.append({"role": "assistant", "content": final_content})
                 return {"response": final_content, "tool_calls": trace_tool_calls}  # fix #2
 
@@ -260,14 +271,16 @@ if __name__ == "__main__":
         print(f"{CLIColors.DIM}Agent is typing...{CLIColors.RESET}", end="\r")
         
         answer = run_agent(conversation_history)
-        
+
         # Clear the "typing..." line
         print(" " * 25, end="\r")
-        
+
+        response_text = answer["response"]   # <-- pull out the actual string first
+
         # Single typewriter output
         print(f"{CLIColors.AGENT}{CLIColors.BOLD}Aster & Row: {CLIColors.RESET}", end="", flush=True)
-        for char in answer:
+        for char in response_text:
             print(char, end="", flush=True)
             time.sleep(0.012)
-            
+
         print("\n")
