@@ -1,3 +1,5 @@
+
+
 # Aster & Row AI Support Agent
 
 A compact, privacy-first customer support agent for Aster & Row that combines retrieval-augmented generation with strict tool use and a guarded order lookup layer. The system answers policy questions from an internal knowledge base, refuses to guess when evidence is missing, and prevents sensitive customer data from reaching the model.
@@ -245,7 +247,9 @@ Before production, I would improve:
 
 
 
-**[▶ Watch the demo](PASTE_YOUR_VIDEO_LINK_HERE)**
+
+https://github.com/user-attachments/assets/9d6439ff-f050-4238-95e8-bfd2245b570f
+
 
 
 
